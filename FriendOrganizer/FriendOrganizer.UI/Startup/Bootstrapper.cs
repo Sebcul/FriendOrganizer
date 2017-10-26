@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using FriendOrganizer.DataAccess;
 using FriendOrganizer.UI.Data;
 using FriendOrganizer.UI.ViewModel;
 
@@ -11,6 +12,7 @@ namespace FriendOrganizer.UI.Startup
             var builder = new ContainerBuilder();
             builder.RegisterType<MainViewModel>().AsSelf();
             builder.RegisterType<MainWindow>().AsSelf();
+            builder.RegisterType<FriendOrganizerDbContext>().AsSelf();
             builder.RegisterType<FriendDataService>().As<IFriendDataService>();
 
             return builder.Build();
