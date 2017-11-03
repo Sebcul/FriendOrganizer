@@ -26,5 +26,7 @@ namespace FriendOrganizer.Model
         public int? FavoriteLanguageId { get; set; }
 
         public ProgrammingLanguage FavoriteLanguage { get; set; }
+
+        public virtual ICollection<FriendPhoneNumber> PhoneNumbers { get; set; }
     }
 }
