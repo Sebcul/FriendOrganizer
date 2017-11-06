@@ -17,11 +17,11 @@ using FriendOrganizer.UI.Data.Lookups;
 
 namespace FriendOrganizer.UI.ViewModel
 {
-    public class FriendDetailViewModel : ViewModelBase, IFriendDetailViewModel
+    public class FriendDetailViewModel : DetailViewModelBase, IFriendDetailViewModel
     {
         private IFriendRepository _friendRepository;
         private FriendWrapper _friend;
-        private IEventAggregator _eventAggregator;
+
         private bool _hasChanges;
         private IMessageDialogService _messageDialogService;
         private IProgrammingLanguageLookupDataService _programmingLanguageLookupDataService;
@@ -29,15 +29,12 @@ namespace FriendOrganizer.UI.ViewModel
 
         public FriendDetailViewModel(IFriendRepository friendRepository,
             IEventAggregator eventAggregator, IMessageDialogService messageDialogService,
-            IProgrammingLanguageLookupDataService programmingLanguageLookupDataService)
+            IProgrammingLanguageLookupDataService programmingLanguageLookupDataService) : base(eventAggregator)
         {
             _friendRepository = friendRepository;
-            _eventAggregator = eventAggregator;
             _messageDialogService = messageDialogService;
             _programmingLanguageLookupDataService = programmingLanguageLookupDataService;
 
-            SaveCommand = new DelegateCommand(OnSaveExecute, OnSaveCanExecute);
-            DeleteCommand = new DelegateCommand(OnDeleteExecute);
             AddPhoneNumberCommand = new DelegateCommand(OnAddPhoneNumberExecute);
             RemovePhoneNumberCommand = new DelegateCommand(OnRemovePhoneNumberExecute, OnRemovePhoneNumberCanExecute);
 
@@ -46,11 +43,6 @@ namespace FriendOrganizer.UI.ViewModel
         }
 
 
-
-
-        public ICommand SaveCommand { get; }
-
-        public ICommand DeleteCommand { get; }
 
         public ICommand AddPhoneNumberCommand { get; }
 
@@ -83,22 +75,8 @@ namespace FriendOrganizer.UI.ViewModel
             }
         }
 
-        public bool HasChanges
-        {
-            get => _hasChanges;
-            set
-            {
-                if (_hasChanges != value)
-                {
-                    _hasChanges = value;
-                    OnPropertyChanged();
-                    ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
-                }
-            }
-        }
 
-
-        public async Task LoadAsync(int? friendId)
+        public override async Task LoadAsync(int? friendId)
         {
             var friend = friendId.HasValue ?
                 await _friendRepository.GetByIdAsync(friendId.Value)
@@ -171,27 +149,22 @@ namespace FriendOrganizer.UI.ViewModel
             }
         }
 
-        private async void OnSaveExecute()
+        protected override async void OnSaveExecute()
         {
             await _friendRepository.SaveAsync();
             HasChanges = _friendRepository.HasChanges();
-            _eventAggregator.GetEvent<AfterFriendSavedEvent>().Publish(
-                new AfterFriendSavedEventArgs
-            {
-                Id = Friend.Id,
-                DisplayMember = Friend.FirstName + " " + Friend.LastName
-            });
+            RaiseDetailSavedEvent(Friend.Id, $"{Friend.FirstName} {Friend.LastName}");
         }
 
-        private async void OnDeleteExecute()
+        protected override async void OnDeleteExecute()
         {
             var result = _messageDialogService
-                .ShowOkCanceDialog($"Do you really want to delete {Friend.FirstName} {Friend.LastName} from the world?", "Question");
+                .ShowOkCancelDialog($"Do you really want to delete {Friend.FirstName} {Friend.LastName} from the world?", "Question");
             if (result == MessageDialogResult.OK)
             {
                 _friendRepository.Remove(Friend.Model);
                 await _friendRepository.SaveAsync();
-                _eventAggregator.GetEvent<AfterFriendDeletedEvent>().Publish(Friend.Id);
+                RaiseDetailDeletedEvent(Friend.Id);
             }
         }
 
@@ -219,7 +192,7 @@ namespace FriendOrganizer.UI.ViewModel
             return SelectedPhoneNumber != null;
         }
 
-        private bool OnSaveCanExecute()
+        protected override bool OnSaveCanExecute()
         {
 
             return Friend != null 

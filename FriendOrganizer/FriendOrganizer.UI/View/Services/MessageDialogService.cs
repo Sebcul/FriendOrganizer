@@ -10,7 +10,7 @@ namespace FriendOrganizer.UI.View.Services
     public class MessageDialogService : IMessageDialogService
     {
 
-        public MessageDialogResult ShowOkCanceDialog(string text, string title)
+        public MessageDialogResult ShowOkCancelDialog(string text, string title)
         {
             var result = MessageBox.Show(text, title, MessageBoxButton.OKCancel);
             return result == MessageBoxResult.OK ? MessageDialogResult.OK : MessageDialogResult.Cancel;
