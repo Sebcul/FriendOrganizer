@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -10,6 +11,10 @@ namespace FriendOrganizer.Model
 {
     public class Friend
     {
+        public Friend()
+        {
+            Meetings = new Collection<Meeting>();
+        }
         public int Id { get; set; }
 
         [Required]
@@ -28,5 +33,7 @@ namespace FriendOrganizer.Model
         public ProgrammingLanguage FavoriteLanguage { get; set; }
 
         public virtual ICollection<FriendPhoneNumber> PhoneNumbers { get; set; }
+
+        public ICollection<Meeting> Meetings { get; set; }
     }
 }
