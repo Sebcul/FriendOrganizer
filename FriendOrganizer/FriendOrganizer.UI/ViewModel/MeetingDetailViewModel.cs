@@ -29,7 +29,7 @@ namespace FriendOrganizer.UI.ViewModel
 
         public MeetingWrapper Meeting
         {
-            get { return _meeting; }
+            get => _meeting;
             private set
             {
                 _meeting = value;
@@ -63,6 +63,10 @@ namespace FriendOrganizer.UI.ViewModel
                 }
             };
             ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
+            if (Meeting.Id == 0)
+            {
+                Meeting.Title = "";
+            }
         }
 
         private Meeting CreateNewMeeting()
