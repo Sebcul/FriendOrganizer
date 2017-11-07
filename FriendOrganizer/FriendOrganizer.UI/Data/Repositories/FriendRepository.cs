@@ -23,6 +23,13 @@ namespace FriendOrganizer.UI.Data.Repositories
             
         }
 
+        public async Task<bool> HasMeetingsAsync(int friendId)
+        {
+            return await Context.Meetings.AsNoTracking()
+                .Include(m => m.Friends)
+                .AnyAsync(m => m.Friends.Any(f => f.Id == friendId));
+        }
+
         public void RemovePhoneNumber(FriendPhoneNumber model)
         {
             Context.FriendPhoneNumber.Remove(model);
