@@ -13,6 +13,7 @@ namespace FriendOrganizer.Model
     {
         public Friend()
         {
+            PhoneNumbers = new Collection<FriendPhoneNumber>();
             Meetings = new Collection<Meeting>();
         }
         public int Id { get; set; }
