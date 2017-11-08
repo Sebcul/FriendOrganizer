@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FriendOrganizer.Model;
+﻿using FriendOrganizer.Model;
+using System;
 
 namespace FriendOrganizer.UI.Wrapper
 {
@@ -13,17 +9,17 @@ namespace FriendOrganizer.UI.Wrapper
         {
         }
 
-        public int Id => Model.Id;
+        public int Id { get { return Model.Id; } }
 
         public string Title
         {
-            get => GetValue<string>();
-            set => SetValue(value);
+            get { return GetValue<string>(); }
+            set { SetValue(value); }
         }
 
         public DateTime DateFrom
         {
-            get => GetValue<DateTime>();
+            get { return GetValue<DateTime>(); }
             set
             {
                 SetValue(value);
@@ -36,7 +32,7 @@ namespace FriendOrganizer.UI.Wrapper
 
         public DateTime DateTo
         {
-            get => GetValue<DateTime>();
+            get { return GetValue<DateTime>(); }
             set
             {
                 SetValue(value);

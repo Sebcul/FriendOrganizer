@@ -1,16 +1,20 @@
-﻿using System;
+﻿using FriendOrganizer.UI.ViewModel;
+using System.ComponentModel;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using FriendOrganizer.UI.ViewModel;
 
 namespace FriendOrganizer.UI.Wrapper
 {
     public class NotifyDataErrorInfoBase : ViewModelBase, INotifyDataErrorInfo
     {
-        private Dictionary<string, List<string>> _errorsByPropertyName =
-            new Dictionary<string, List<string>>();
+        private Dictionary<string, List<string>> _errorsByPropertyName
+            = new Dictionary<string, List<string>>();
+
+        public bool HasErrors => _errorsByPropertyName.Any();
+
+        public event EventHandler<DataErrorsChangedEventArgs> ErrorsChanged;
 
         public IEnumerable GetErrors(string propertyName)
         {
@@ -46,9 +50,5 @@ namespace FriendOrganizer.UI.Wrapper
                 OnErrorsChanged(propertyName);
             }
         }
-
-        public bool HasErrors => _errorsByPropertyName.Any();
-
-        public event EventHandler<DataErrorsChangedEventArgs> ErrorsChanged;
     }
 }

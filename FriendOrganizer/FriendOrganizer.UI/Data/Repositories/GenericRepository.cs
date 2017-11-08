@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 namespace FriendOrganizer.UI.Data.Repositories
 {
-    public class GenericRepository<TEntity, TContext> : IGenereicRepository<TEntity>
-        where TContext:DbContext
-        where TEntity: class 
+    public class GenericRepository<TEntity, TContext> : IGenericRepository<TEntity>
+        where TEntity : class
+        where TContext : DbContext
     {
         protected readonly TContext Context;
 
@@ -13,14 +13,14 @@ namespace FriendOrganizer.UI.Data.Repositories
         {
             this.Context = context;
         }
-        public virtual async Task<TEntity> GetByIdAsync(int id)
+        public void Add(TEntity model)
         {
-            return  await Context.Set<TEntity>().FindAsync(id);
+            Context.Set<TEntity>().Add(model);
         }
 
-        public async Task SaveAsync()
+        public virtual async Task<TEntity> GetByIdAsync(int id)
         {
-            await Context.SaveChangesAsync();
+            return await Context.Set<TEntity>().FindAsync(id);
         }
 
         public bool HasChanges()
@@ -28,14 +28,14 @@ namespace FriendOrganizer.UI.Data.Repositories
             return Context.ChangeTracker.HasChanges();
         }
 
-        public void Add(TEntity model)
-        {
-            Context.Set<TEntity>().Add(model);
-        }
-
         public void Remove(TEntity model)
         {
             Context.Set<TEntity>().Remove(model);
+        }
+
+        public async Task SaveAsync()
+        {
+            await Context.SaveChangesAsync();
         }
     }
 }

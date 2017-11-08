@@ -2,7 +2,7 @@
 
 namespace FriendOrganizer.UI.Data.Repositories
 {
-    public interface IGenereicRepository<T>
+    public interface IGenericRepository<T>
     {
         Task<T> GetByIdAsync(int id);
         Task SaveAsync();
