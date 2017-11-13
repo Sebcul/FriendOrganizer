@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using FriendOrganizer.DataAccess;
+using FriendOrganizer.UI.API.GoogleCalendar;
 using FriendOrganizer.UI.Data;
 using FriendOrganizer.UI.Data.Lookups;
 using FriendOrganizer.UI.Data.Repositories;
@@ -22,6 +23,7 @@ namespace FriendOrganizer.UI.Startup
             builder.RegisterType<MainWindow>().AsSelf();
 
             builder.RegisterType<MessageDialogService>().As<IMessageDialogService>();
+            builder.RegisterType<GoogleCalendarService>().As<IGoogleCalendarService>();
 
             builder.RegisterType<MainViewModel>().AsSelf();
             builder.RegisterType<NavigationViewModel>().As<INavigationViewModel>();

@@ -10,7 +10,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Collections.Generic;
+using FriendOrganizer.UI.API.GoogleCalendar;
 using FriendOrganizer.UI.Event;
+using Google.Apis.Calendar.v3.Data;
 
 namespace FriendOrganizer.UI.ViewModel
 {
@@ -21,17 +23,21 @@ namespace FriendOrganizer.UI.ViewModel
         private Friend _selectedAvailableFriend;
         private Friend _selectedAddedFriend;
         private List<Friend> _allFriends;
+        private IGoogleCalendarService _googleCalendarService;
 
         public MeetingDetailViewModel(IEventAggregator eventAggregator,
           IMessageDialogService messageDialogService,
-          IMeetingRepository meetingRepository) : base(eventAggregator, messageDialogService)
+          IMeetingRepository meetingRepository,
+          IGoogleCalendarService googleCalendarService) : base(eventAggregator, messageDialogService)
         {
             _meetingRepository = meetingRepository;
+            _googleCalendarService = googleCalendarService;
             eventAggregator.GetEvent<AfterDetailSavedEvent>().Subscribe(AfterDetailSaved);
             eventAggregator.GetEvent<AfterDetailDeletedEvent>().Subscribe(AfterDetailDeleted);
 
             AddedFriends = new ObservableCollection<Friend>();
             AvailableFriends = new ObservableCollection<Friend>();
+            GoogleCalendarMeetings = new ObservableCollection<Google.Apis.Calendar.v3.Data.Event>();
             AddFriendCommand = new DelegateCommand(OnAddFriendExecute, OnAddFriendCanExecute);
             RemoveFriendCommand = new DelegateCommand(OnRemoveFriendExecute, OnRemoveFriendCanExecute);
         }
@@ -53,6 +59,8 @@ namespace FriendOrganizer.UI.ViewModel
         public ObservableCollection<Friend> AddedFriends { get; }
 
         public ObservableCollection<Friend> AvailableFriends { get; }
+
+        public ObservableCollection<Google.Apis.Calendar.v3.Data.Event> GoogleCalendarMeetings { get; }
 
         public Friend SelectedAvailableFriend
         {
@@ -86,6 +94,8 @@ namespace FriendOrganizer.UI.ViewModel
 
             InitializeMeeting(meeting);
 
+            LoadGoogleCalendarMeetings();
+
             _allFriends = await _meetingRepository.GetAllFriendsAsync();
 
             SetupPicklist();
@@ -113,6 +123,12 @@ namespace FriendOrganizer.UI.ViewModel
             HasChanges = _meetingRepository.HasChanges();
             Id = Meeting.Id;
             RaiseDetailSavedEvent(Meeting.Id, Meeting.Title);
+            var result = await MessageDialogService.ShowOkCancelDialogAsync("Do you want to add the meeting to your google calendar?",
+                "Question");
+            if (result == MessageDialogResult.OK)
+            {
+                AddMeetingToGoogleCalendar();
+            }
         }
 
         private void SetupPicklist()
@@ -141,6 +157,7 @@ namespace FriendOrganizer.UI.ViewModel
                 DateTo = DateTime.Now.Date
             };
             _meetingRepository.Add(meeting);
+
             return meeting;
         }
 
@@ -227,6 +244,21 @@ namespace FriendOrganizer.UI.ViewModel
                 _allFriends = await _meetingRepository.GetAllFriendsAsync();
                 SetupPicklist();
             }
+        }
+
+        private async void LoadGoogleCalendarMeetings()
+        {
+                var allEvents = await _googleCalendarService.GetAllEvents();
+                foreach (var meeting in allEvents)
+                {
+                    GoogleCalendarMeetings.Add(meeting);
+                }
+        }
+
+
+        private async void AddMeetingToGoogleCalendar()
+        {
+            await _googleCalendarService.CreateNewCalendarEvent(Meeting.Title, Meeting.DateFrom, Meeting.DateTo);
         }
     }
 }
