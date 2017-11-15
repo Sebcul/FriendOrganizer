@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Collections.Generic;
+using FriendOrganizer.UI.Data.API.JokeAPI;
 using FriendOrganizer.UI.Event;
 
 namespace FriendOrganizer.UI.ViewModel
@@ -21,12 +22,19 @@ namespace FriendOrganizer.UI.ViewModel
         private Friend _selectedAvailableFriend;
         private Friend _selectedAddedFriend;
         private List<Friend> _allFriends;
+        private IJokeService _jokeService;
+        private JokeWrapper _randomJoke;
+        private IJokeRepository _jokeRepository;
 
         public MeetingDetailViewModel(IEventAggregator eventAggregator,
           IMessageDialogService messageDialogService,
+          IJokeService jokeService,
+          IJokeRepository jokeRepository,
           IMeetingRepository meetingRepository) : base(eventAggregator, messageDialogService)
         {
             _meetingRepository = meetingRepository;
+            _jokeService = jokeService;
+            _jokeRepository = jokeRepository;
             eventAggregator.GetEvent<AfterDetailSavedEvent>().Subscribe(AfterDetailSaved);
             eventAggregator.GetEvent<AfterDetailDeletedEvent>().Subscribe(AfterDetailDeleted);
 
@@ -34,7 +42,12 @@ namespace FriendOrganizer.UI.ViewModel
             AvailableFriends = new ObservableCollection<Friend>();
             AddFriendCommand = new DelegateCommand(OnAddFriendExecute, OnAddFriendCanExecute);
             RemoveFriendCommand = new DelegateCommand(OnRemoveFriendExecute, OnRemoveFriendCanExecute);
+            GetRandomJokeCommand = new DelegateCommand(OnGetNewRandomJokeExecute);
+            AddJokeCommand = new DelegateCommand(OnAddJokeExecute);
         }
+
+
+
 
         public MeetingWrapper Meeting
         {
@@ -50,6 +63,10 @@ namespace FriendOrganizer.UI.ViewModel
 
         public ICommand RemoveFriendCommand { get; }
 
+        public ICommand GetRandomJokeCommand { get; }
+
+        public ICommand AddJokeCommand { get; }
+
         public ObservableCollection<Friend> AddedFriends { get; }
 
         public ObservableCollection<Friend> AvailableFriends { get; }
@@ -62,6 +79,16 @@ namespace FriendOrganizer.UI.ViewModel
                 _selectedAvailableFriend = value;
                 OnPropertyChanged();
                 ((DelegateCommand)AddFriendCommand).RaiseCanExecuteChanged();
+            }
+        }
+
+        public JokeWrapper RandomJoke
+        {
+            get { return _randomJoke; }
+            set
+            {
+                _randomJoke = value;
+                OnPropertyChanged();
             }
         }
 
@@ -87,6 +114,8 @@ namespace FriendOrganizer.UI.ViewModel
             InitializeMeeting(meeting);
 
             _allFriends = await _meetingRepository.GetAllFriendsAsync();
+
+            RandomJoke = await _jokeService.GetRandomJoke();
 
             SetupPicklist();
         }
@@ -133,6 +162,11 @@ namespace FriendOrganizer.UI.ViewModel
             }
         }
 
+        private async void OnGetNewRandomJokeExecute()
+        {
+            RandomJoke = await _jokeService.GetRandomJoke();
+        }
+
         private Meeting CreateNewMeeting()
         {
             var meeting = new Meeting
@@ -142,6 +176,30 @@ namespace FriendOrganizer.UI.ViewModel
             };
             _meetingRepository.Add(meeting);
             return meeting;
+        }
+
+        private async void OnAddJokeExecute()
+        {
+            //TODO: Add raise savecanexecute when adding jokes to meetings
+            var joke = await CreateNewJoke();
+            Meeting.Model.Jokes.Add(joke);
+            //await _meetingRepository.SaveAsync();
+            RandomJoke = await _jokeService.GetRandomJoke();
+            HasChanges = _meetingRepository.HasChanges();
+            ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
+        }
+
+        private async Task<Joke> CreateNewJoke()
+        {
+            var joke = new Joke
+            {
+                Type = RandomJoke.type,
+                Setup = RandomJoke.setup,
+                Punchline = RandomJoke.punchline
+            };
+
+            var addedJoke = await _meetingRepository.AddJokeAsync(joke);
+            return addedJoke;
         }
 
         private void InitializeMeeting(Meeting meeting)

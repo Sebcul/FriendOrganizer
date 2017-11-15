@@ -19,6 +19,8 @@ namespace FriendOrganizer.DataAccess
 
         public DbSet<Meeting> Meetings { get; set; }
 
+        public DbSet<Joke> Jokes { get; set; }
+
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {

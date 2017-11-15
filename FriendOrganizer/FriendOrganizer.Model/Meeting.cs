@@ -13,6 +13,7 @@ namespace FriendOrganizer.Model
         public Meeting()
         {
             Friends = new Collection<Friend>();
+            Jokes = new Collection<Joke>();
         }
 
         public int Id { get; set; }
@@ -26,6 +27,8 @@ namespace FriendOrganizer.Model
         public DateTime DateTo { get; set; }
 
         public ICollection<Friend> Friends { get; set; }
+
+        public virtual ICollection<Joke> Jokes { get; set; }
 
     }
 }

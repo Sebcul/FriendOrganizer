@@ -18,7 +18,7 @@ namespace FriendOrganizer.UI.Data.Repositories
         public async override Task<Meeting> GetByIdAsync(int id)
         {
             return await Context.Meetings
-                .Include(m => m.Friends)
+                .Include(m => m.Friends).Include(m => m.Jokes)
                 .SingleAsync(m => m.Id == id);
         }
 
@@ -36,6 +36,24 @@ namespace FriendOrganizer.UI.Data.Repositories
             {
                 await dbEntityEntry.ReloadAsync();
             }
+        }
+
+        private async Task<bool> JokeExistsAsync(Joke joke)
+        {
+            return await Context.Jokes.AnyAsync(j =>
+                j.Setup == joke.Setup && j.Punchline == joke.Punchline && j.Type == joke.Type);
+        }
+
+        public async Task<Joke> AddJokeAsync(Joke joke)
+        {
+            if (await JokeExistsAsync(joke))
+            {
+                return await Context.Set<Joke>().FirstOrDefaultAsync(j =>
+                    j.Setup == joke.Setup && j.Punchline == joke.Punchline && j.Type == joke.Type);
+            }
+
+            Context.Set<Joke>().Add(joke);
+            return joke;
         }
     }
 }

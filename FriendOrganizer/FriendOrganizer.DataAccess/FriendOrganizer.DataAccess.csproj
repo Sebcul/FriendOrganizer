@@ -72,6 +72,14 @@
     <Compile Include="Migrations\201711091355109_AddedRowVersionToFriend.Designer.cs">
       <DependentUpon>201711091355109_AddedRowVersionToFriend.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201711151055038_AddingJoke.cs" />
+    <Compile Include="Migrations\201711151055038_AddingJoke.Designer.cs">
+      <DependentUpon>201711151055038_AddingJoke.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711151217367_ChangedJokeModel.cs" />
+    <Compile Include="Migrations\201711151217367_ChangedJokeModel.Designer.cs">
+      <DependentUpon>201711151217367_ChangedJokeModel.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -103,6 +111,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201711091355109_AddedRowVersionToFriend.resx">
       <DependentUpon>201711091355109_AddedRowVersionToFriend.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711151055038_AddingJoke.resx">
+      <DependentUpon>201711151055038_AddingJoke.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711151217367_ChangedJokeModel.resx">
+      <DependentUpon>201711151217367_ChangedJokeModel.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
