@@ -9,5 +9,6 @@ namespace FriendOrganizer.UI.Data.Repositories
         Task<List<Friend>> GetAllFriendsAsync();
         Task ReloadFriendAsync(int friendId);
         Task<Joke> AddJokeAsync(Joke joke);
+        Task<IEnumerable<Joke>> GetAllJokesForMeetingAsync(int meetingId);
     }
 }

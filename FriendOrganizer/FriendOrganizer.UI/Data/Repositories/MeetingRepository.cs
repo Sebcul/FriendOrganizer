@@ -55,5 +55,15 @@ namespace FriendOrganizer.UI.Data.Repositories
             Context.Set<Joke>().Add(joke);
             return joke;
         }
+
+        public async Task<IEnumerable<Joke>> GetAllJokesForMeetingAsync(int meetingId)
+        {
+            var meeting = await Context.Meetings
+                .Include(m => m.Friends)
+                .Include(m => m.Jokes)
+                .FirstOrDefaultAsync(m => m.Id == meetingId);
+
+            return meeting.Jokes;
+        }
     }
 }

@@ -39,6 +39,7 @@ namespace FriendOrganizer.UI.ViewModel
             eventAggregator.GetEvent<AfterDetailDeletedEvent>().Subscribe(AfterDetailDeleted);
 
             AddedFriends = new ObservableCollection<Friend>();
+            AddedJokes = new ObservableCollection<JokeWrapper>();
             AvailableFriends = new ObservableCollection<Friend>();
             AddFriendCommand = new DelegateCommand(OnAddFriendExecute, OnAddFriendCanExecute);
             RemoveFriendCommand = new DelegateCommand(OnRemoveFriendExecute, OnRemoveFriendCanExecute);
@@ -68,6 +69,8 @@ namespace FriendOrganizer.UI.ViewModel
         public ICommand AddJokeCommand { get; }
 
         public ObservableCollection<Friend> AddedFriends { get; }
+
+        public ObservableCollection<JokeWrapper> AddedJokes { get; }
 
         public ObservableCollection<Friend> AvailableFriends { get; }
 
@@ -117,7 +120,26 @@ namespace FriendOrganizer.UI.ViewModel
 
             RandomJoke = await _jokeService.GetRandomJoke();
 
+            await FillAddedJokes();
+
             SetupPicklist();
+        }
+
+        private async Task FillAddedJokes()
+        {
+            var jokes  = await _meetingRepository.GetAllJokesForMeetingAsync(Meeting.Model.Id);
+
+            AddedJokes.Clear();
+
+            foreach (var joke in jokes)
+            {
+                AddedJokes.Add(new JokeWrapper
+                {
+                    type = joke.Type,
+                    setup = joke.Setup,
+                    punchline = joke.Punchline
+                });
+            }
         }
 
         protected async override void OnDeleteExecute()
@@ -180,12 +202,24 @@ namespace FriendOrganizer.UI.ViewModel
 
         private async void OnAddJokeExecute()
         {
-            //TODO: Add raise savecanexecute when adding jokes to meetings
             var joke = await CreateNewJoke();
+            await _meetingRepository.SaveAsync();
+
             Meeting.Model.Jokes.Add(joke);
-            //await _meetingRepository.SaveAsync();
             RandomJoke = await _jokeService.GetRandomJoke();
-            HasChanges = _meetingRepository.HasChanges();
+
+            if (!AddedJokes.Any(j => j.setup == joke.Setup && j.punchline == joke.Punchline))
+            {
+                AddedJokes.Add(new JokeWrapper
+                {
+                    type = joke.Type,
+                    setup = joke.Setup,
+                    punchline = joke.Punchline
+                });
+
+            }
+            
+            HasChanges = true;
             ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
         }
 
