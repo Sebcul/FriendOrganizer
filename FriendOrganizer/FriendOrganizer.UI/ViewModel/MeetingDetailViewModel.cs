@@ -35,12 +35,14 @@ namespace FriendOrganizer.UI.ViewModel
         {
             _meetingRepository = meetingRepository;
             _jokeService = jokeService;
+
             eventAggregator.GetEvent<AfterDetailSavedEvent>().Subscribe(AfterDetailSaved);
             eventAggregator.GetEvent<AfterDetailDeletedEvent>().Subscribe(AfterDetailDeleted);
 
             AddedFriends = new ObservableCollection<Friend>();
             AddedJokes = new ObservableCollection<JokeWrapper>();
             AvailableFriends = new ObservableCollection<Friend>();
+
             AddFriendCommand = new DelegateCommand(OnAddFriendExecute, OnAddFriendCanExecute);
             RemoveFriendCommand = new DelegateCommand(OnRemoveFriendExecute, OnRemoveFriendCanExecute);
             GetRandomJokeCommand = new DelegateCommand(LoadRandomJokeAsync, LoadRandomJokeCanExecute);
@@ -49,15 +51,6 @@ namespace FriendOrganizer.UI.ViewModel
             RemoveJokeCommand = new DelegateCommand(OnRemoveJokeExecute, OnRemoveJokeCanExecute);
         }
 
-        public MeetingWrapper Meeting
-        {
-            get { return _meeting; }
-            private set
-            {
-                _meeting = value;
-                OnPropertyChanged();
-            }
-        }
 
         public ICommand AddFriendCommand { get; }
 
@@ -83,12 +76,6 @@ namespace FriendOrganizer.UI.ViewModel
             }
         }
 
-        private async void ShowFullJokeMessageDialogAsync()
-        {
-            await MessageDialogService.ShowInfoDialogAsync(
-                $"{SelectedAddedJoke.setup} \n {SelectedAddedJoke.punchline}");
-        }
-
         public ObservableCollection<Friend> AddedFriends { get; }
 
         public ObservableCollection<JokeWrapper> AddedJokes { get; }
@@ -103,6 +90,16 @@ namespace FriendOrganizer.UI.ViewModel
                 _selectedAvailableFriend = value;
                 OnPropertyChanged();
                 ((DelegateCommand) AddFriendCommand).RaiseCanExecuteChanged();
+            }
+        }
+
+        public MeetingWrapper Meeting
+        {
+            get { return _meeting; }
+            private set
+            {
+                _meeting = value;
+                OnPropertyChanged();
             }
         }
 
@@ -383,6 +380,12 @@ namespace FriendOrganizer.UI.ViewModel
             {
                 ShowFullJokeMessageDialogAsync();
             }
+        }
+
+        private async void ShowFullJokeMessageDialogAsync()
+        {
+            await MessageDialogService.ShowInfoDialogAsync(
+                $"{SelectedAddedJoke.setup} \n {SelectedAddedJoke.punchline}");
         }
 
         private bool OnAddJokeCanExecute()

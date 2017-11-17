@@ -38,11 +38,6 @@ namespace FriendOrganizer.UI.Data.Repositories
             }
         }
 
-        private async Task<bool> JokeExistsAsync(Joke joke)
-        {
-            return await Context.Jokes.AnyAsync(j =>
-                j.Setup == joke.Setup && j.Punchline == joke.Punchline && j.Type == joke.Type);
-        }
 
         public async Task<Joke> AddJokeAsync(Joke joke)
         {
@@ -64,6 +59,12 @@ namespace FriendOrganizer.UI.Data.Repositories
                 .FirstOrDefaultAsync(m => m.Id == meetingId);
 
             return meeting.Jokes;
+        }
+
+        private async Task<bool> JokeExistsAsync(Joke joke)
+        {
+            return await Context.Jokes.AnyAsync(j =>
+                j.Setup == joke.Setup && j.Punchline == joke.Punchline && j.Type == joke.Type);
         }
     }
 }
