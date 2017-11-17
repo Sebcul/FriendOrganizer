@@ -7,9 +7,9 @@ using FriendOrganizer.Model;
 
 namespace FriendOrganizer.UI.Wrapper
 {
-    public class JokeWrapper
+    public class JokeWrapper : ModelWrapper<Joke>
     {
-        public JokeWrapper()
+        public JokeWrapper(Joke model) : base(model)
         {
 
         }

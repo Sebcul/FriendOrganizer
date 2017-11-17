@@ -58,6 +58,7 @@
             <ListView Grid.Row="1" ItemsSource="{Binding AvailableFriends}"
                 SelectedItem="{Binding SelectedAvailableFriend}" Grid.Column="2"/>
         </Grid>
+        
         <Grid Grid.Row="7" Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -69,6 +70,7 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Label Grid.Row="0" Content="Random Joke"></Label>
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding JokeNotLoadedText}"/>
             <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding RandomJoke.setup, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding RandomJoke.punchline, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <StackPanel  Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
@@ -76,12 +78,8 @@
                 <Button Content="New" Width="75"  Margin="10" Command="{Binding GetRandomJokeCommand}"/>
             </StackPanel>
         </Grid>
+        
         <Grid Grid.Row="8" Margin="10">
-            <Grid.Resources>
-                <DataTemplate DataType="{x:Type model:Friend}">
-                    <TextBlock><Run Text="{Binding FirstName}"/> <Run Text="{Binding LastName}"/></TextBlock>
-                </DataTemplate>
-            </Grid.Resources>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition Width="Auto"/>
@@ -93,10 +91,11 @@
 
             <Label Content="Added Jokes"/>
             <ListView Grid.Column="0" Grid.Row="1" ItemsSource="{Binding AddedJokes}"
-                      SelectedItem="{Binding SelectedJoke}"/>
+                      SelectedItem="{Binding SelectedAddedJoke}"/>
 
             <StackPanel Grid.Row="1" Grid.Column="1">
                 <Button Content="Remove" Margin="10" Command="{Binding RemoveJokeCommand}"/>
+                <Button Content="Open" Margin="10" Command="{Binding OpenReadJokeCommand}"/>
             </StackPanel>
 
         </Grid>

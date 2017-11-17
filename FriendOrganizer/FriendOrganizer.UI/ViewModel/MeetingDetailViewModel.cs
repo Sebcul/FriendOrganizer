@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Collections.Generic;
+using System.Net.Http;
 using FriendOrganizer.UI.Data.API.JokeAPI;
 using FriendOrganizer.UI.Event;
 
@@ -24,17 +25,16 @@ namespace FriendOrganizer.UI.ViewModel
         private List<Friend> _allFriends;
         private IJokeService _jokeService;
         private JokeWrapper _randomJoke;
-        private IJokeRepository _jokeRepository;
+        private JokeWrapper _selectedAddedJoke;
+        private string _jokeNotLoadedText;
 
         public MeetingDetailViewModel(IEventAggregator eventAggregator,
-          IMessageDialogService messageDialogService,
-          IJokeService jokeService,
-          IJokeRepository jokeRepository,
-          IMeetingRepository meetingRepository) : base(eventAggregator, messageDialogService)
+            IMessageDialogService messageDialogService,
+            IJokeService jokeService,
+            IMeetingRepository meetingRepository) : base(eventAggregator, messageDialogService)
         {
             _meetingRepository = meetingRepository;
             _jokeService = jokeService;
-            _jokeRepository = jokeRepository;
             eventAggregator.GetEvent<AfterDetailSavedEvent>().Subscribe(AfterDetailSaved);
             eventAggregator.GetEvent<AfterDetailDeletedEvent>().Subscribe(AfterDetailDeleted);
 
@@ -43,12 +43,11 @@ namespace FriendOrganizer.UI.ViewModel
             AvailableFriends = new ObservableCollection<Friend>();
             AddFriendCommand = new DelegateCommand(OnAddFriendExecute, OnAddFriendCanExecute);
             RemoveFriendCommand = new DelegateCommand(OnRemoveFriendExecute, OnRemoveFriendCanExecute);
-            GetRandomJokeCommand = new DelegateCommand(OnGetNewRandomJokeExecute);
-            AddJokeCommand = new DelegateCommand(OnAddJokeExecute);
+            GetRandomJokeCommand = new DelegateCommand(LoadRandomJokeAsync, LoadRandomJokeCanExecute);
+            AddJokeCommand = new DelegateCommand(OnAddJokeExecute, OnAddJokeCanExecute);
+            OpenReadJokeCommand = new DelegateCommand(OnOpenJokeExecute, OnOpenJokeCanExecute);
+            RemoveJokeCommand = new DelegateCommand(OnRemoveJokeExecute, OnRemoveJokeCanExecute);
         }
-
-
-
 
         public MeetingWrapper Meeting
         {
@@ -68,6 +67,28 @@ namespace FriendOrganizer.UI.ViewModel
 
         public ICommand AddJokeCommand { get; }
 
+        public ICommand OpenReadJokeCommand { get; }
+
+        public ICommand RemoveJokeCommand { get; }
+
+        public JokeWrapper SelectedAddedJoke
+        {
+            get { return _selectedAddedJoke; }
+            set
+            {
+                _selectedAddedJoke = value;
+                OnPropertyChanged();
+                ((DelegateCommand) RemoveJokeCommand).RaiseCanExecuteChanged();
+                ((DelegateCommand) OpenReadJokeCommand).RaiseCanExecuteChanged();
+            }
+        }
+
+        private async void ShowFullJokeMessageDialogAsync()
+        {
+            await MessageDialogService.ShowInfoDialogAsync(
+                $"{SelectedAddedJoke.setup} \n {SelectedAddedJoke.punchline}");
+        }
+
         public ObservableCollection<Friend> AddedFriends { get; }
 
         public ObservableCollection<JokeWrapper> AddedJokes { get; }
@@ -81,7 +102,7 @@ namespace FriendOrganizer.UI.ViewModel
             {
                 _selectedAvailableFriend = value;
                 OnPropertyChanged();
-                ((DelegateCommand)AddFriendCommand).RaiseCanExecuteChanged();
+                ((DelegateCommand) AddFriendCommand).RaiseCanExecuteChanged();
             }
         }
 
@@ -92,6 +113,8 @@ namespace FriendOrganizer.UI.ViewModel
             {
                 _randomJoke = value;
                 OnPropertyChanged();
+                ((DelegateCommand) AddJokeCommand).RaiseCanExecuteChanged();
+                ((DelegateCommand) GetRandomJokeCommand).RaiseCanExecuteChanged();
             }
         }
 
@@ -102,15 +125,25 @@ namespace FriendOrganizer.UI.ViewModel
             {
                 _selectedAddedFriend = value;
                 OnPropertyChanged();
-                ((DelegateCommand)RemoveFriendCommand).RaiseCanExecuteChanged();
+                ((DelegateCommand) RemoveFriendCommand).RaiseCanExecuteChanged();
+            }
+        }
+
+        public string JokeNotLoadedText
+        {
+            get { return _jokeNotLoadedText; }
+            set
+            {
+                _jokeNotLoadedText = value;
+                OnPropertyChanged();
             }
         }
 
         public override async Task LoadAsync(int meetingId)
         {
             var meeting = meetingId > 0
-              ? await _meetingRepository.GetByIdAsync(meetingId)
-              : CreateNewMeeting();
+                ? await _meetingRepository.GetByIdAsync(meetingId)
+                : CreateNewMeeting();
 
             Id = meetingId;
 
@@ -118,22 +151,37 @@ namespace FriendOrganizer.UI.ViewModel
 
             _allFriends = await _meetingRepository.GetAllFriendsAsync();
 
-            RandomJoke = await _jokeService.GetRandomJoke();
+            LoadRandomJokeAsync();
 
-            await FillAddedJokes();
+            FillAddedJokesAsync();
 
             SetupPicklist();
         }
 
-        private async Task FillAddedJokes()
+        private async void LoadRandomJokeAsync()
         {
-            var jokes  = await _meetingRepository.GetAllJokesForMeetingAsync(Meeting.Model.Id);
+            try
+            {
+                RandomJoke = await _jokeService.GetRandomJoke();
+            }
+            catch (HttpRequestException e)
+            {
+                await MessageDialogService.ShowInfoDialogAsync("Random jokes could not be loaded. " +
+                                                               "Check your internet connection.");
+                JokeNotLoadedText = "No jokes could be loaded..";
+                RandomJoke = null;
+            }
+        }
+
+        private async void FillAddedJokesAsync()
+        {
+            var jokes = await _meetingRepository.GetAllJokesForMeetingAsync(Meeting.Model.Id);
 
             AddedJokes.Clear();
 
             foreach (var joke in jokes)
             {
-                AddedJokes.Add(new JokeWrapper
+                AddedJokes.Add(new JokeWrapper(joke)
                 {
                     type = joke.Type,
                     setup = joke.Setup,
@@ -144,7 +192,9 @@ namespace FriendOrganizer.UI.ViewModel
 
         protected async override void OnDeleteExecute()
         {
-            var result = await MessageDialogService.ShowOkCancelDialogAsync($"Do you really want to delete the meeting {Meeting.Title}?", "Question");
+            var result =
+                await MessageDialogService.ShowOkCancelDialogAsync(
+                    $"Do you really want to delete the meeting {Meeting.Title}?", "Question");
             if (result == MessageDialogResult.OK)
             {
                 _meetingRepository.Remove(Meeting.Model);
@@ -184,9 +234,13 @@ namespace FriendOrganizer.UI.ViewModel
             }
         }
 
-        private async void OnGetNewRandomJokeExecute()
+        private bool LoadRandomJokeCanExecute()
         {
-            RandomJoke = await _jokeService.GetRandomJoke();
+            if (RandomJoke != null)
+            {
+                return true;
+            }
+            return false;
         }
 
         private Meeting CreateNewMeeting()
@@ -203,24 +257,25 @@ namespace FriendOrganizer.UI.ViewModel
         private async void OnAddJokeExecute()
         {
             var joke = await CreateNewJoke();
-            await _meetingRepository.SaveAsync();
 
-            Meeting.Model.Jokes.Add(joke);
             RandomJoke = await _jokeService.GetRandomJoke();
 
-            if (!AddedJokes.Any(j => j.setup == joke.Setup && j.punchline == joke.Punchline))
+            if (AddedJokes.Any(j => j.setup == joke.Setup && j.punchline == joke.Punchline))
             {
-                AddedJokes.Add(new JokeWrapper
-                {
-                    type = joke.Type,
-                    setup = joke.Setup,
-                    punchline = joke.Punchline
-                });
-
+                await MessageDialogService.ShowInfoDialogAsync("This joke is already added to the meeting.");
+                return;
             }
-            
+            Meeting.Model.Jokes.Add(joke);
+
+            AddedJokes.Add(new JokeWrapper(joke)
+            {
+                type = joke.Type,
+                setup = joke.Setup,
+                punchline = joke.Punchline
+            });
+
             HasChanges = true;
-            ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
+            ((DelegateCommand) SaveCommand).RaiseCanExecuteChanged();
         }
 
         private async Task<Joke> CreateNewJoke()
@@ -248,14 +303,14 @@ namespace FriendOrganizer.UI.ViewModel
 
                 if (e.PropertyName == nameof(Meeting.HasErrors))
                 {
-                    ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
+                    ((DelegateCommand) SaveCommand).RaiseCanExecuteChanged();
                 }
                 if (e.PropertyName == nameof(Meeting.Title))
                 {
                     SetTitle();
                 }
             };
-            ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
+            ((DelegateCommand) SaveCommand).RaiseCanExecuteChanged();
 
             if (Meeting.Id == 0)
             {
@@ -278,7 +333,7 @@ namespace FriendOrganizer.UI.ViewModel
             AddedFriends.Remove(friendToRemove);
             AvailableFriends.Add(friendToRemove);
             HasChanges = _meetingRepository.HasChanges();
-            ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
+            ((DelegateCommand) SaveCommand).RaiseCanExecuteChanged();
         }
 
         private bool OnRemoveFriendCanExecute()
@@ -299,7 +354,40 @@ namespace FriendOrganizer.UI.ViewModel
             AddedFriends.Add(friendToAdd);
             AvailableFriends.Remove(friendToAdd);
             HasChanges = _meetingRepository.HasChanges();
-            ((DelegateCommand)SaveCommand).RaiseCanExecuteChanged();
+            ((DelegateCommand) SaveCommand).RaiseCanExecuteChanged();
+        }
+
+        private bool OnRemoveJokeCanExecute()
+        {
+            return SelectedAddedJoke != null;
+        }
+
+        private void OnRemoveJokeExecute()
+        {
+            var jokeToRemove = SelectedAddedJoke;
+
+            Meeting.Model.Jokes.Remove(jokeToRemove.Model);
+            AddedJokes.Remove(jokeToRemove);
+            HasChanges = _meetingRepository.HasChanges();
+            ((DelegateCommand) SaveCommand).RaiseCanExecuteChanged();
+        }
+
+        private bool OnOpenJokeCanExecute()
+        {
+            return SelectedAddedJoke != null;
+        }
+
+        private void OnOpenJokeExecute()
+        {
+            if (SelectedAddedJoke != null)
+            {
+                ShowFullJokeMessageDialogAsync();
+            }
+        }
+
+        private bool OnAddJokeCanExecute()
+        {
+            return RandomJoke != null;
         }
 
         private async void AfterDetailSaved(AfterDetailSavedEventArgs args)
